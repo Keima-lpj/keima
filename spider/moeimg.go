@@ -124,7 +124,7 @@ func moeimgSpiderImageRun(link, title string) {
 		imageSrc := e2.Attr("href")
 		fmt.Println("获取图片连接：", imageSrc)
 		//保存图片
-		util.SaveFile(imageSrc, saveDir, 0)
+		util.SaveFile(imageSrc, saveDir, "", 0)
 	})
 
 	c2.OnScraped(func(r *colly.Response) {

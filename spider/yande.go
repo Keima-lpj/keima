@@ -100,7 +100,7 @@ func yandeSpiderImageRun(link string) {
 		fmt.Println(fmt.Sprintf("目录%s创建失败，爬取%s页面失败", yandeRootDir, link))
 		return
 	}
-	util.SaveFile(link, yandeRootDir, 0)
+	util.SaveFile(link, yandeRootDir, "", 0)
 	yandeWg2.Done()
 	return
 }

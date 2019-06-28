@@ -12,9 +12,11 @@ import (
 )
 
 //从网页上下载图片，保存到对应的文件夹中
-func SaveFile(fileSrc, fileDir string, filter int) {
-	//获取文件基础名称
-	fileName := path.Base(fileSrc)
+func SaveFile(fileSrc, fileDir, fileName string, filter int) {
+	if fileName == "" {
+		//获取文件基础名称
+		fileName = path.Base(fileSrc)
+	}
 	if filter == 1 {
 		//过滤特殊字符
 		fileName = filterSpec(fileName)
