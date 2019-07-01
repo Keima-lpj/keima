@@ -14,33 +14,81 @@ var (
 	rootUrl      = "https://manhua.fzdm.com/132/"
 	saveDir      = "E:\\keke\\one_punchMan\\"
 	chapterNumWg = sync.WaitGroup{}
+	page         = 50
 )
 
 /**
 一拳超人的爬虫程序
 @param chapter int 章节信息，如果传0，则默认爬取所有章节
 */
-func OnePunchRun(chapter int) {
-	if chapter != 0 {
-		chapterWg := sync.WaitGroup{}
-		chapterWg.Add(100)
-		for i := 0; i <= 100; i++ {
-			go onePunchChapterGet(&chapterWg, chapter, i)
+func OnePunchRun(chapter interface{}) {
+	//如果是int，则默认爬取固定章节
+	if value, ok := chapter.(int); ok {
+		if value != 0 {
+			var valString string
+			if value < 10 {
+				valString = "00" + strconv.Itoa(value)
+			} else if value >= 10 && value <= 20 {
+				valString = "0" + strconv.Itoa(value)
+			} else {
+				valString = strconv.Itoa(value)
+			}
+			chapterWg := sync.WaitGroup{}
+			chapterWg.Add(page)
+			for i := 0; i <= page; i++ {
+				go onePunchChapterGet(&chapterWg, valString, i)
+			}
+			chapterWg.Wait()
+		} else {
+			//下载所有的章节
+			//获取页面的章节信息(一共有多少章节)
+			chapterNum := getChapterNum()
+			chapterNumWg.Add(chapterNum)
+			//循环章节
+			for x := 1; x <= chapterNum; x++ {
+				var valString string
+				if x < 10 {
+					valString = "00" + strconv.Itoa(x)
+				} else if x >= 10 && x <= 20 {
+					valString = "0" + strconv.Itoa(x)
+				} else {
+					valString = strconv.Itoa(x)
+				}
+				//开启goroutine读取该章节的页
+				go func(x string) {
+					chapterWg := sync.WaitGroup{}
+					chapterWg.Add(page)
+					for i := 0; i < page; i++ {
+						go onePunchChapterGet(&chapterWg, x, i)
+					}
+					chapterWg.Wait()
+					chapterNumWg.Done()
+				}(valString)
+			}
+			chapterNumWg.Wait()
 		}
-		chapterWg.Wait()
-	} else {
-		//下载所有的章节
-		//获取页面的章节信息(一共有多少章节)
-		chapterNum := getChapterNum()
-		chapterNumWg.Add(chapterNum)
+	}
+	//如果是slice，则爬取slice传递的章节
+	if value, ok := chapter.([]int); ok {
+		start := value[0]
+		end := value[1]
+		chapterNumWg.Add(end - start + 1)
 		//循环章节
-		for x := 1; x <= chapterNum; x++ {
+		for x := start; x <= end; x++ {
+			var valString string
+			if x < 10 {
+				valString = "00" + strconv.Itoa(x)
+			} else if x >= 10 && x <= 20 {
+				valString = "0" + strconv.Itoa(x)
+			} else {
+				valString = strconv.Itoa(x)
+			}
 			//开启goroutine读取该章节的页
 			go func(x int) {
 				chapterWg := sync.WaitGroup{}
-				chapterWg.Add(50)
-				for i := 0; i < 50; i++ {
-					go onePunchChapterGet(&chapterWg, x, i)
+				chapterWg.Add(page)
+				for i := 0; i < page; i++ {
+					go onePunchChapterGet(&chapterWg, valString, i)
 				}
 				chapterWg.Wait()
 				chapterNumWg.Done()
@@ -48,6 +96,7 @@ func OnePunchRun(chapter int) {
 		}
 		chapterNumWg.Wait()
 	}
+
 }
 
 func getChapterNum() (num int) {
@@ -101,7 +150,7 @@ func onePunchCollector() *colly.Collector {
 /**
 进入到章节页面中，爬取固定章节
 */
-func onePunchChapterGet(chapterWg *sync.WaitGroup, chapter, i int) {
+func onePunchChapterGet(chapterWg *sync.WaitGroup, chapter string, i int) {
 	/*defer func() {
 		err := recover()
 		if err != nil {
@@ -113,9 +162,9 @@ func onePunchChapterGet(chapterWg *sync.WaitGroup, chapter, i int) {
 
 	defer chapterWg.Done()
 
-	url := fmt.Sprintf("%s%v/index_%v.html", rootUrl, chapter, i)
+	url := fmt.Sprintf("%s%s/index_%v.html", rootUrl, chapter, i)
 	//这里在对应的文件夹下新建对应标题的文件夹
-	chapterSaveDir := fmt.Sprintf("%s%v/", saveDir, chapter)
+	chapterSaveDir := fmt.Sprintf("%s%s/", saveDir, chapter)
 	makeDirErr := util.MakeDir(chapterSaveDir)
 	if makeDirErr != nil {
 		fmt.Println(fmt.Sprintf("目录%s创建失败", chapterSaveDir))
