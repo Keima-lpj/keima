@@ -81,7 +81,7 @@ func OnePunchRun(chapter interface{}) {
 func chapterName(chapter int) (valString string) {
 	if chapter < 10 {
 		valString = "00" + strconv.Itoa(chapter)
-	} else if chapter >= 10 && x <= 20 {
+	} else if chapter >= 10 && chapter <= 20 {
 		valString = "0" + strconv.Itoa(chapter)
 	} else {
 		valString = strconv.Itoa(chapter)
