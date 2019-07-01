@@ -25,14 +25,7 @@ func OnePunchRun(chapter interface{}) {
 	//如果是int，则默认爬取固定章节
 	if value, ok := chapter.(int); ok {
 		if value != 0 {
-			var valString string
-			if value < 10 {
-				valString = "00" + strconv.Itoa(value)
-			} else if value >= 10 && value <= 20 {
-				valString = "0" + strconv.Itoa(value)
-			} else {
-				valString = strconv.Itoa(value)
-			}
+			valString := chapterName(value)
 			chapterWg := sync.WaitGroup{}
 			chapterWg.Add(page)
 			for i := 0; i <= page; i++ {
@@ -46,14 +39,7 @@ func OnePunchRun(chapter interface{}) {
 			chapterNumWg.Add(chapterNum)
 			//循环章节
 			for x := 1; x <= chapterNum; x++ {
-				var valString string
-				if x < 10 {
-					valString = "00" + strconv.Itoa(x)
-				} else if x >= 10 && x <= 20 {
-					valString = "0" + strconv.Itoa(x)
-				} else {
-					valString = strconv.Itoa(x)
-				}
+				valString := chapterName(x)
 				//开启goroutine读取该章节的页
 				go func(x string) {
 					chapterWg := sync.WaitGroup{}
@@ -75,14 +61,7 @@ func OnePunchRun(chapter interface{}) {
 		chapterNumWg.Add(end - start + 1)
 		//循环章节
 		for x := start; x <= end; x++ {
-			var valString string
-			if x < 10 {
-				valString = "00" + strconv.Itoa(x)
-			} else if x >= 10 && x <= 20 {
-				valString = "0" + strconv.Itoa(x)
-			} else {
-				valString = strconv.Itoa(x)
-			}
+			valString := chapterName(x)
 			//开启goroutine读取该章节的页
 			go func(x int) {
 				chapterWg := sync.WaitGroup{}
@@ -97,6 +76,17 @@ func OnePunchRun(chapter interface{}) {
 		chapterNumWg.Wait()
 	}
 
+}
+
+func chapterName(chapter int) (valString string) {
+	if chapter < 10 {
+		valString = "00" + strconv.Itoa(chapter)
+	} else if chapter >= 10 && x <= 20 {
+		valString = "0" + strconv.Itoa(chapter)
+	} else {
+		valString = strconv.Itoa(chapter)
+	}
+	return
 }
 
 func getChapterNum() (num int) {
