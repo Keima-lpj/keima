@@ -42,9 +42,9 @@ func nijieroChGetCollector() *colly.Collector {
 		r.Headers.Set("Upgrade-Insecure-Requests", "1")
 		r.Headers.Set("Accept-Encoding", "gzip, deflate, br")
 		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
-		r.Headers.Set("Accept-Language", "en-hk,zh;q=0.9,en;q=0.8")
+		r.Headers.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
 		r.Headers.Set("cache-control", "max-age=0")
-		r.Headers.Set("Cookie", "__cfduid=d5ff0516f6bee2e798cf2a30dbce201fb1562979989; 6666cd76f96956469e7be39d750cc7d9=1562979991; swpm_session=f8c73f9afa557dd3741f1edf309096f4; 516cb421a0b9e4c5876b936b3c266642=1562980006; 4635521ffb8828249a72cc8b1deda0d4=1562980018; b45d97180970a64d22c6cd45f5657c39=1562980137; 1dd124a9ff39b5799e121fc0c3e01577=1562980149")
+		r.Headers.Set("Cookie", "__cfduid=d5ff0516f6bee2e798cf2a30dbce201fb1562979989; swpm_session=f8c73f9afa557dd3741f1edf309096f4")
 	})
 	return c
 }
@@ -64,13 +64,14 @@ func nijieroChSpiderRun(page int) {
 	c := nijieroChGetCollector()
 	//收到相应之后的处理
 	c.OnResponse(func(resp *colly.Response) {
-		//response := string(resp.Body)
-		response := resp.Body
-		fmt.Println(response)
+		/*response := string(resp.Body)
+		fmt.Println(response)*/
 	})
 
 	//爬取到html后
-	c.OnHTML(".box > a, .box > h2 > a", func(e *colly.HTMLElement) {
+	c.OnHTML("#contentLine cf", func(e *colly.HTMLElement) {
+		//link := e.Attr("href")
+		fmt.Println(e)
 		/*link := e.Attr("href")
 		title := e.Attr("title")
 		fmt.Println("获取外部连接：", link)
