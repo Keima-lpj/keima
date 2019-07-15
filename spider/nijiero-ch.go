@@ -17,21 +17,16 @@ var (
 )
 
 //爬取nijiero-ch.com的页面
-func NijieroChRun(page int) {
-	//如果输入的页码为0，则爬取所有的图片（可能会很慢哦）
-	if page == 0 {
-		//todo 这里通过爬取页面，获取总共的页码数
-
-	} else {
-		nijieroChWg.Add(page)
-		//爬取第一页到输入的页码
-		for i := 1; i <= page; i++ {
-			go nijieroChSpiderRun(page)
-		}
+func NijieroChRun(startPage, endPage int) {
+	count := endPage - startPage + 1
+	nijieroChWg.Add(count)
+	//要爬取的页面
+	for i := startPage; i <= endPage; i++ {
+		go nijieroChSpiderRun(i)
 	}
 	nijieroChWg.Wait()
 	nijieroChWg2.Wait()
-	nijieroChSaveFileWg.Wait()
+	//nijieroChSaveFileWg.Wait()
 }
 
 func nijieroChSpiderRun(page int) {
@@ -87,7 +82,7 @@ func nijieroChSpiderImageRun(link, title string) {
 		imageUrl := vArr[2]
 		fmt.Println(imageUrl)
 		nijieroChSaveFileWg.Add(1)
-		go util.SaveFile(imageUrl, saveDir, "", &nijieroChSaveFileWg)
+		util.SaveFile(imageUrl, saveDir, "", &nijieroChSaveFileWg)
 	}
 	fmt.Println("爬取页面成功，爬取图片数量：", i)
 	return

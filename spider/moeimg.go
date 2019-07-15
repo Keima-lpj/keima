@@ -17,17 +17,18 @@ var (
 	moeimgRootDir    = "E:\\keke\\moeimg\\"
 )
 
-func MoeimgRun(page int) {
-	moeimgWg.Add(page)
+func MoeimgRun(startPage, endPage int) {
+	count := endPage - startPage + 1
+	moeimgWg.Add(count)
 	//要爬取的页面
-	for i := 1; i <= page; i++ {
+	for i := startPage; i <= endPage; i++ {
 		url := fmt.Sprintf(moeimgUrl, strconv.Itoa(i))
 		fmt.Println("开始采集页面：", url)
 		go moeimgSpiderRun(url)
 	}
 	moeimgWg.Wait()
 	moeimgWg2.Wait()
-	moeimgSaveFileWg.Wait()
+	//moeimgSaveFileWg.Wait()
 }
 
 func moeimgGetCollector() *colly.Collector {
@@ -54,22 +55,15 @@ func moeimgGetCollector() *colly.Collector {
 第一次抓取页面内容
 */
 func moeimgSpiderRun(url string) {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-			moeimgWg.Done()
-		}
-	}()
+	defer moeimgWg.Done()
 
 	//获取一个收集器
 	c := moeimgGetCollector()
-
 	//收到相应之后的处理
 	c.OnResponse(func(resp *colly.Response) {
 		/*response := string(resp.Body)
 		fmt.Println(response)*/
 	})
-
 	//爬取到html后
 	c.OnHTML(".box > a, .box > h2 > a", func(e *colly.HTMLElement) {
 		link := e.Attr("href")
@@ -77,6 +71,7 @@ func moeimgSpiderRun(url string) {
 		fmt.Println("获取外部连接：", link)
 		//如果取到了html的字符串，则往里进一层
 		if -1 != strings.Index(link, "html") {
+			moeimgWg2.Add(1)
 			go moeimgSpiderImageRun(link, title)
 		}
 	})
@@ -87,7 +82,6 @@ func moeimgSpiderRun(url string) {
 	})
 
 	c.OnScraped(func(r *colly.Response) {
-		moeimgWg.Done()
 	})
 
 	err := c.Visit(url)
@@ -101,24 +95,16 @@ func moeimgSpiderRun(url string) {
 第二次抓取页面内容
 */
 func moeimgSpiderImageRun(link, title string) {
-	moeimgWg2.Add(1)
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-			moeimgWg2.Done()
-		}
-	}()
+	defer moeimgWg2.Done()
 
 	//最终保存路径
 	saveDir := fmt.Sprintf("%s%s\\", moeimgRootDir, title)
-
 	//这里在对应的文件夹下新建对应标题的文件夹
 	makeDirErr := util.MakeDir(saveDir)
 	if makeDirErr != nil {
 		fmt.Println(fmt.Sprintf("目录%s创建失败，爬取%s页面失败", saveDir, link))
 		return
 	}
-
 	fmt.Println("我准备再次访问链接了！", link)
 	c2 := moeimgGetCollector()
 
@@ -127,18 +113,16 @@ func moeimgSpiderImageRun(link, title string) {
 		fmt.Println("获取图片连接：", imageSrc)
 		//保存图片
 		moeimgSaveFileWg.Add(1)
-		go util.SaveFile(imageSrc, saveDir, "", &moeimgSaveFileWg)
+		util.SaveFile(imageSrc, saveDir, "", &moeimgSaveFileWg)
 	})
 
 	c2.OnScraped(func(r *colly.Response) {
-		moeimgWg2.Done()
 	})
 
 	err := c2.Visit(link)
 
 	if err != nil {
 		fmt.Println("2报错啦！", err)
-		moeimgWg2.Done()
 	}
 	return
 }

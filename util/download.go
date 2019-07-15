@@ -8,12 +8,11 @@ import (
 	"os"
 	"path"
 	"sync"
-	"time"
 )
 
 //从网页上下载图片，保存到对应的文件夹中
 func SaveFile(fileSrc, fileDir, fileName string, wg *sync.WaitGroup) {
-	defer (*wg).Done()
+	//defer (*wg).Done()
 
 	if fileName == "" {
 		//获取文件基础名称
@@ -24,11 +23,7 @@ func SaveFile(fileSrc, fileDir, fileName string, wg *sync.WaitGroup) {
 
 	//判断如果目标文件存在，则不继续操作
 	if has, _ := PathExists(saveFileDir); !has {
-		client := http.Client{}
-		client.Timeout = time.Second * 600
-		res, err := client.Get(fileSrc)
-
-		//res, err := http.Get(fileSrc)
+		res, err := http.Get(fileSrc)
 		if err != nil {
 			fmt.Println("保存图片时报错了！", err)
 			return
