@@ -2,17 +2,18 @@ package spider
 
 import (
 	"fmt"
-	"github.com/gocolly/colly"
 	"github.com/keima/util"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 var (
-	nijieroChUrl     = "https://nijiero-ch.com/page/%s"
-	nijieroChRootDir = "E:\\keke\\nijiero-ch\\"
-	nijieroChWg      = sync.WaitGroup{}
-	nijieroChWg2     = sync.WaitGroup{}
+	nijieroChUrl        = "https://nijiero-ch.com/page/%s"
+	nijieroChRootDir    = "E:\\keke\\nijiero-ch\\"
+	nijieroChWg         = sync.WaitGroup{}
+	nijieroChWg2        = sync.WaitGroup{}
+	nijieroChSaveFileWg = sync.WaitGroup{}
 )
 
 //爬取nijiero-ch.com的页面
@@ -29,83 +30,37 @@ func NijieroChRun(page int) {
 		}
 	}
 	nijieroChWg.Wait()
-}
-
-//获取收集器
-func nijieroChGetCollector() *colly.Collector {
-	//获取一个收集器
-	c := colly.NewCollector()
-	//设置代理和请求头
-	c.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-	//请求之前的设置
-	c.OnRequest(func(r *colly.Request) {
-		r.Headers.Set("Upgrade-Insecure-Requests", "1")
-		r.Headers.Set("Accept-Encoding", "gzip, deflate, br")
-		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
-		r.Headers.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-		r.Headers.Set("cache-control", "max-age=0")
-		r.Headers.Set("Cookie", "__cfduid=d5ff0516f6bee2e798cf2a30dbce201fb1562979989; swpm_session=f8c73f9afa557dd3741f1edf309096f4")
-	})
-	return c
+	nijieroChWg2.Wait()
+	nijieroChSaveFileWg.Wait()
 }
 
 func nijieroChSpiderRun(page int) {
-
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-		}
-		nijieroChWg.Done()
-	}()
+	defer nijieroChWg.Done()
 
 	//根据传递的page得到爬取的url
 	url := fmt.Sprintf(nijieroChUrl, strconv.Itoa(page))
-	//得到一个收集器
-	c := nijieroChGetCollector()
-	//收到相应之后的处理
-	c.OnResponse(func(resp *colly.Response) {
-		/*response := string(resp.Body)
-		fmt.Println(response)*/
-	})
-
-	//爬取到html后
-	c.OnHTML("#contentLine cf", func(e *colly.HTMLElement) {
-		//link := e.Attr("href")
-		fmt.Println(e)
-		/*link := e.Attr("href")
-		title := e.Attr("title")
-		fmt.Println("获取外部连接：", link)
-		//如果取到了html的字符串，则往里进一层
-		if -1 != strings.Index(link, "html") {
-			go nijieroChSpiderImageRun(link, title)
-		}*/
-	})
-
-	//错误时的报错信息
-	c.OnError(func(resp *colly.Response, errHttp error) {
-		fmt.Println(errHttp)
-	})
-
-	c.OnScraped(func(r *colly.Response) {
-		//moeimgWg.Done()
-	})
-
-	err := c.Visit(url)
-
-	if err != nil {
-		fmt.Println("报错啦！", err)
+	contents := util.ExplainUrl(url)
+	//以“post hentry”来切分获取的连接
+	contentsArr := strings.Split(contents, "post hentry")
+	for k, v := range contentsArr {
+		//跳过第一个
+		if k == 0 {
+			continue
+		}
+		//将v以"切分
+		vArr := strings.Split(v, "\"")
+		secondUrl := vArr[2]
+		title := vArr[4]
+		//开始爬取子页面
+		go nijieroChSpiderImageRun(secondUrl, title)
 	}
 }
 
 //第二次抓取页面
 func nijieroChSpiderImageRun(link, title string) {
+	defer nijieroChWg2.Done()
+
 	nijieroChWg2.Add(1)
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-		}
-		nijieroChWg2.Done()
-	}()
 
 	//最终保存路径
 	saveDir := fmt.Sprintf("%s%s\\", nijieroChRootDir, title)
@@ -115,25 +70,25 @@ func nijieroChSpiderImageRun(link, title string) {
 		fmt.Println(fmt.Sprintf("目录%s创建失败，爬取%s页面失败", saveDir, link))
 		return
 	}
-
 	fmt.Println("我准备再次访问链接了！", link)
-	c2 := nijieroChGetCollector()
 
-	c2.OnHTML(".box > a", func(e2 *colly.HTMLElement) {
-		imageSrc := e2.Attr("href")
-		fmt.Println("获取图片连接：", imageSrc)
-		//保存图片
-		util.SaveFile(imageSrc, saveDir, "", 0)
-	})
-
-	c2.OnScraped(func(r *colly.Response) {
-		//nijieroChWg2.Done()
-	})
-
-	err := c2.Visit(link)
-
-	if err != nil {
-		fmt.Println("2报错啦！", err)
+	contents := util.ExplainUrl(link)
+	//以"imageTitle"来切分获取的连接
+	contentsArr := strings.Split(contents, "imageTitle")
+	i := 0
+	for k, v := range contentsArr {
+		//跳过第一个
+		if k <= 1 || (strings.Index(v, "script") != -1 && strings.Index(v, "jpg") == -1) {
+			continue
+		}
+		i++
+		//将v以"切分
+		vArr := strings.Split(v, "\"")
+		imageUrl := vArr[2]
+		fmt.Println(imageUrl)
+		nijieroChSaveFileWg.Add(1)
+		go util.SaveFile(imageUrl, saveDir, "", &nijieroChSaveFileWg)
 	}
+	fmt.Println("爬取页面成功，爬取图片数量：", i)
 	return
 }

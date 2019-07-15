@@ -7,19 +7,17 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
+	"sync"
 	"time"
 )
 
 //从网页上下载图片，保存到对应的文件夹中
-func SaveFile(fileSrc, fileDir, fileName string, filter int) {
+func SaveFile(fileSrc, fileDir, fileName string, wg *sync.WaitGroup) {
+	defer (*wg).Done()
+
 	if fileName == "" {
 		//获取文件基础名称
 		fileName = path.Base(fileSrc)
-	}
-	if filter == 1 {
-		//过滤特殊字符
-		fileName = filterSpec(fileName)
 	}
 	//最终保存的文件名
 	saveFileDir := fileDir + fileName
@@ -27,7 +25,7 @@ func SaveFile(fileSrc, fileDir, fileName string, filter int) {
 	//判断如果目标文件存在，则不继续操作
 	if has, _ := PathExists(saveFileDir); !has {
 		client := http.Client{}
-		client.Timeout = time.Second * 300
+		client.Timeout = time.Second * 600
 		res, err := client.Get(fileSrc)
 
 		//res, err := http.Get(fileSrc)
@@ -76,11 +74,4 @@ func PathExists(path string) (bool, error) {
 func MakeDir(dir string) (err error) {
 	//可以使用Mkdir或者MkdirAll，前者父级目录必须存在，不然会失败，后者可以递归创建目录
 	return os.MkdirAll(dir, 0766)
-}
-
-//过滤特殊字符
-func filterSpec(fileName string) string {
-	fileName = strings.Replace(fileName, "%", "", 10)
-	fileName = strings.Replace(fileName, "yande.re", "", 10)
-	return fileName
 }

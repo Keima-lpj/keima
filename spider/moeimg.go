@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	moeimgUrl     = "http://moeimg.net/page/%s"
-	moeimgWg      = sync.WaitGroup{}
-	moeimgWg2     = sync.WaitGroup{}
-	moeimgRootDir = "E:\\keke\\moeimg\\"
+	moeimgUrl        = "http://moeimg.net/page/%s"
+	moeimgWg         = sync.WaitGroup{}
+	moeimgWg2        = sync.WaitGroup{}
+	moeimgSaveFileWg = sync.WaitGroup{}
+	moeimgRootDir    = "E:\\keke\\moeimg\\"
 )
 
 func MoeimgRun(page int) {
@@ -26,6 +27,7 @@ func MoeimgRun(page int) {
 	}
 	moeimgWg.Wait()
 	moeimgWg2.Wait()
+	moeimgSaveFileWg.Wait()
 }
 
 func moeimgGetCollector() *colly.Collector {
@@ -124,7 +126,8 @@ func moeimgSpiderImageRun(link, title string) {
 		imageSrc := e2.Attr("href")
 		fmt.Println("获取图片连接：", imageSrc)
 		//保存图片
-		util.SaveFile(imageSrc, saveDir, "", 0)
+		moeimgSaveFileWg.Add(1)
+		go util.SaveFile(imageSrc, saveDir, "", &moeimgSaveFileWg)
 	})
 
 	c2.OnScraped(func(r *colly.Response) {

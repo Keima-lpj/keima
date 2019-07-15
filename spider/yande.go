@@ -9,10 +9,11 @@ import (
 )
 
 var (
-	yandeUrl     = "https://yande.re/post?page=%s"
-	yandeWg      = sync.WaitGroup{}
-	yandeWg2     = sync.WaitGroup{}
-	yandeRootDir = "E:\\keke\\yande\\"
+	yandeUrl        = "https://yande.re/post?page=%s"
+	yandeWg         = sync.WaitGroup{}
+	yandeWg2        = sync.WaitGroup{}
+	yandeSaveFileWg = sync.WaitGroup{}
+	yandeRootDir    = "E:\\keke\\yande\\"
 )
 
 func YandeRun(page int) {
@@ -25,6 +26,7 @@ func YandeRun(page int) {
 	}
 	yandeWg.Wait()
 	yandeWg2.Wait()
+	yandeSaveFileWg.Wait()
 }
 
 func yandeGetCollector() *colly.Collector {
@@ -100,7 +102,8 @@ func yandeSpiderImageRun(link string) {
 		fmt.Println(fmt.Sprintf("目录%s创建失败，爬取%s页面失败", yandeRootDir, link))
 		return
 	}
-	util.SaveFile(link, yandeRootDir, "", 0)
+	yandeSaveFileWg.Add(1)
+	go util.SaveFile(link, yandeRootDir, "", &yandeSaveFileWg)
 	yandeWg2.Done()
 	return
 }

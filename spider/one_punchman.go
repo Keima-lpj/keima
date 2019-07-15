@@ -11,10 +11,11 @@ import (
 )
 
 var (
-	rootUrl      = "https://manhua.fzdm.com/132/"
-	saveDir      = "E:\\keke\\one_punchMan\\"
-	chapterNumWg = sync.WaitGroup{}
-	page         = 50
+	rootUrl            = "https://manhua.fzdm.com/132/"
+	saveDir            = "E:\\keke\\one_punchMan\\"
+	chapterNumWg       = sync.WaitGroup{}
+	onePunchSaveFileWg = sync.WaitGroup{}
+	page               = 50
 )
 
 /**
@@ -52,6 +53,7 @@ func OnePunchRun(chapter interface{}) {
 				}(valString)
 			}
 			chapterNumWg.Wait()
+			onePunchSaveFileWg.Wait()
 		}
 	}
 	//如果是slice，则爬取slice传递的章节
@@ -74,6 +76,7 @@ func OnePunchRun(chapter interface{}) {
 			}(x)
 		}
 		chapterNumWg.Wait()
+		onePunchSaveFileWg.Wait()
 	}
 
 }
@@ -178,7 +181,8 @@ func onePunchChapterGet(chapterWg *sync.WaitGroup, chapter string, i int) {
 		url := "http://www-mipengine-org.mipcdn.com/i/" + arr[17] + "/" + arr[5]
 		fmt.Println("开始爬取图片：", url)
 		fileName := fmt.Sprintf("%v_%s", i, path.Base(url))
-		util.SaveFile(url, chapterSaveDir, fileName, 0)
+		onePunchSaveFileWg.Add(1)
+		go util.SaveFile(url, chapterSaveDir, fileName, &onePunchSaveFileWg)
 	})
 	//处理完html后
 	c.OnScraped(func(r *colly.Response) {
