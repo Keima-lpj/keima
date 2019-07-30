@@ -6,13 +6,14 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/keima/util"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 var (
 	catRootDir       = "E:\\keke\\cat\\"
 	catBaseTitle     = ""
-	baseUrl          = "https://www.686tu.com/"
+	baseUrl          = "https://www.969uy.com/"
 	catPageWaitGroup = sync.WaitGroup{}
 	catWaitGroup     = sync.WaitGroup{}
 	catSaveFileGroup = sync.WaitGroup{}
@@ -46,35 +47,27 @@ func getUrl(getType int, page string) (string, error) {
 	switch getType {
 	case 0:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E8%87%AA%E6%8B%8D%E5%81%B7%E6%8B%8D", page, "html")
-		//url = baseUrl + "/list-%E8%87%AA%E6%8B%8D%E5%81%B7%E6%8B%8D.html"
 		catBaseTitle = "自拍偷拍"
 	case 1:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E4%BA%9A%E6%B4%B2%E8%89%B2%E5%9B%BE", page, "html")
-		//url = baseUrl + "/list-%E4%BA%9A%E6%B4%B2%E8%89%B2%E5%9B%BE.html"
 		catBaseTitle = "亚洲色图"
 	case 2:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E6%AC%A7%E7%BE%8E%E8%89%B2%E5%9B%BE", page, "html")
-		//url = baseUrl + "/list-%E6%AC%A7%E7%BE%8E%E8%89%B2%E5%9B%BE.html"
 		catBaseTitle = "欧美色图"
 	case 3:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E7%BE%8E%E8%85%BF%E4%B8%9D%E8%A2%9C", page, "html")
-		//url = baseUrl + "/list-%E7%BE%8E%E8%85%BF%E4%B8%9D%E8%A2%9C.html"
 		catBaseTitle = "美腿丝袜"
 	case 4:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E6%B8%85%E7%BA%AF%E5%94%AF%E7%BE%8E", page, "html")
-		//url = baseUrl + "/list-%E6%B8%85%E7%BA%AF%E5%94%AF%E7%BE%8E.html"
 		catBaseTitle = "清纯唯美"
 	case 5:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E4%B9%B1%E4%BC%A6%E7%86%9F%E5%A5%B3", page, "html")
-		//url = baseUrl + "/list-%E4%B9%B1%E4%BC%A6%E7%86%9F%E5%A5%B3.html"
 		catBaseTitle = "乱伦熟女"
 	case 6:
 		url = fmt.Sprintf("%s%s%s.%s", baseUrl, "tupian/list-%E5%8D%A1%E9%80%9A%E5%8A%A8%E6%BC%AB", page, "html")
-		//url = baseUrl + "/list-%E5%8D%A1%E9%80%9A%E5%8A%A8%E6%BC%AB.html"
 		catBaseTitle = "卡通动漫"
 	case 7:
-
-		url = "https://www.686tu.com/meinv/index.html"
+		url = fmt.Sprintf("%s%s", baseUrl, "meinv/index.html")
 		catBaseTitle = "极品美女"
 	default:
 		return "", errors.New("输入的数字有误！")
@@ -97,17 +90,14 @@ func catGetCollector() *colly.Collector {
 		r.Headers.Set("Connection", "keep-alive")
 		r.Headers.Set("cache-control", "no-cache")
 		r.Headers.Set("pragma", "no-cache")
-		r.Headers.Set("referer", "https://www.969uy.com/index/home.html")
-		r.Headers.Set("Cookie", "__cfduid=d19e0d3cf6244c9a6fc1c23590021fe2f1564483032; _ga=GA1.2.263595589.1564483034; _gid=GA1.2.523987764.1564483034; Hm_lvt_427f72ce75b0677eb10f24419484eb80=1564483047; Hm_lpvt_427f72ce75b0677eb10f24419484eb80=1564483062; playss=3")
+		//r.Headers.Set("referer", "https://www.969uy.com/index/home.html")
+		r.Headers.Set("cookie", "__cfduid=da6ec18fadae83b3f64db5067bd0620351564487560; _ga=GA1.2.940297954.1564487564; _gid=GA1.2.1762550513.1564487564; _gat_gtag_UA_126205200_1=1; _gat_gtag_UA_126205200_2=1; Hm_lvt_427f72ce75b0677eb10f24419484eb80=1564487566; Hm_lpvt_427f72ce75b0677eb10f24419484eb80=1564487594; _gat_gtag_UA_138595290_2=1; playss=1")
 	})
 	return c
 }
 
 //主逻辑
 func catSpiderRun(url string, page int) {
-
-	fmt.Println(url)
-
 	//获取一个收集器
 	c := catGetCollector()
 	//收到相应之后的处理
@@ -122,9 +112,15 @@ func catSpiderRun(url string, page int) {
 		title := e.Attr("title")
 		link = baseUrl + link
 		fmt.Println("获取外部连接：", link)
-		catWaitGroup.Add(1)
-		//第二次爬取页面
-		go catSpiderImageRun(link, title)
+
+		//判断，如果link中农有meinv，则继续下一层
+		if strings.Index(link, "meinv") != -1 {
+			catMeinvSpiderImageRun(link)
+		} else {
+			catWaitGroup.Add(1)
+			//第二次爬取页面
+			go catSpiderImageRun(link, title)
+		}
 	})
 
 	//错误时的报错信息
@@ -140,6 +136,7 @@ func catSpiderRun(url string, page int) {
 
 	if err != nil {
 		fmt.Println("报错啦！", err)
+		catPageWaitGroup.Done()
 	}
 }
 
@@ -173,6 +170,43 @@ func catSpiderImageRun(link, title string) {
 
 	if err != nil {
 		fmt.Println("2报错啦！", err)
+		catWaitGroup.Done()
 	}
 	return
+}
+
+//访问美女页面
+func catMeinvSpiderImageRun(url string) {
+	//获取一个收集器
+	c := catGetCollector()
+	//收到相应之后的处理
+	c.OnResponse(func(resp *colly.Response) {
+		/*response := string(resp.Body)
+		fmt.Println(response)*/
+	})
+
+	//爬取到html后
+	c.OnHTML("#tpl-img-content > li > a", func(e *colly.HTMLElement) {
+		link := e.Attr("href")
+		title := e.Attr("title")
+		link = baseUrl + link
+		fmt.Println("再次获取外部连接：", link)
+		catWaitGroup.Add(1)
+		//第二次爬取页面
+		go catSpiderImageRun(link, title)
+	})
+
+	//错误时的报错信息
+	c.OnError(func(resp *colly.Response, errHttp error) {
+		fmt.Println(errHttp)
+	})
+
+	c.OnScraped(func(r *colly.Response) {
+	})
+
+	err := c.Visit(url)
+
+	if err != nil {
+		fmt.Println("报错啦！", err)
+	}
 }
