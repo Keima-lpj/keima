@@ -32,7 +32,7 @@ func NijieroChRun(startPage, endPage int) {
 func nijieroChSpiderRun(page int) {
 	defer nijieroChWg.Done()
 
-	//根据传递的page得到爬取的url
+	//根据传递的page得到爬取的url，这里是最外层url
 	url := fmt.Sprintf(nijieroChUrl, strconv.Itoa(page))
 	contents := util.ExplainUrl(url)
 	//以“post hentry”来切分获取的连接
@@ -44,6 +44,7 @@ func nijieroChSpiderRun(page int) {
 		}
 		//将v以"切分
 		vArr := strings.Split(v, "\"")
+		//获取到里面的第二个url
 		secondUrl := vArr[2]
 		title := vArr[4]
 		//开始爬取子页面
