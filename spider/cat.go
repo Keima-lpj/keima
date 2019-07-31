@@ -11,12 +11,13 @@ import (
 )
 
 var (
-	catRootDir       = "E:\\keke\\cat\\"
-	catBaseTitle     = ""
-	baseUrl          = "https://www.969uy.com/"
-	catPageWaitGroup = sync.WaitGroup{}
-	catWaitGroup     = sync.WaitGroup{}
-	catSaveFileGroup = sync.WaitGroup{}
+	catRootDir        = "E:\\keke\\cat\\"
+	catBaseTitle      = ""
+	baseUrl           = "https://www.969uy.com/"
+	catPageWaitGroup  = sync.WaitGroup{}
+	catWaitGroup      = sync.WaitGroup{}
+	catMeinvWaitGroup = sync.WaitGroup{}
+	catSaveFileGroup  = sync.WaitGroup{}
 )
 
 //程序开始
@@ -32,6 +33,7 @@ func CatRun(getType, startPage, endPage int) {
 		go catSpiderRun(url, i)
 	}
 	catPageWaitGroup.Wait()
+	catMeinvWaitGroup.Wait()
 	catWaitGroup.Wait()
 }
 
@@ -115,7 +117,8 @@ func catSpiderRun(url string, page int) {
 
 		//判断，如果link中农有meinv，则继续下一层
 		if strings.Index(link, "meinv") != -1 {
-			catMeinvSpiderImageRun(link)
+			catMeinvWaitGroup.Add(1)
+			go catMeinvSpiderImageRun(link)
 		} else {
 			catWaitGroup.Add(1)
 			//第二次爬取页面
@@ -202,11 +205,13 @@ func catMeinvSpiderImageRun(url string) {
 	})
 
 	c.OnScraped(func(r *colly.Response) {
+		catMeinvWaitGroup.Done()
 	})
 
 	err := c.Visit(url)
 
 	if err != nil {
 		fmt.Println("报错啦！", err)
+		catMeinvWaitGroup.Done()
 	}
 }

@@ -144,16 +144,7 @@ func onePunchCollector() *colly.Collector {
 进入到章节页面中，爬取固定章节
 */
 func onePunchChapterGet(chapterWg *sync.WaitGroup, chapter string, i int) {
-	/*defer func() {
-		err := recover()
-		if err != nil {
-			fmt.Println("panic:", err)
-		}
-	}()*/
-
 	fmt.Println("准备爬取章节：", chapter, "的第", i, "页")
-
-	defer chapterWg.Done()
 
 	url := fmt.Sprintf("%s%s/index_%v.html", rootUrl, chapter, i)
 	//这里在对应的文件夹下新建对应标题的文件夹
@@ -186,17 +177,12 @@ func onePunchChapterGet(chapterWg *sync.WaitGroup, chapter string, i int) {
 	})
 	//处理完html后
 	c.OnScraped(func(r *colly.Response) {
-
-	})
-	//错误时的报错信息
-	/*c.OnError(func(resp *colly.Response, errHttp error) {
-		fmt.Println(errHttp)
 		chapterWg.Done()
-		return
-	})*/
+	})
 	err := c.Visit(url)
 	if err != nil {
 		fmt.Println(url, "报错了，获取不到信息:", err)
+		chapterWg.Done()
 		return
 	}
 }
