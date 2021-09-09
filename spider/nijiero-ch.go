@@ -2,7 +2,7 @@ package spider
 
 import (
 	"fmt"
-	"github.com/keima/util"
+	"github.com/LiaoPuJian/keima/util"
 	"strconv"
 	"strings"
 	"sync"
